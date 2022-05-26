@@ -22,6 +22,8 @@ def openWebsite():
     names = []
     urls = []
     stars = []
+    forks=[]
+    issues=[]
 
     while True:
 
@@ -52,7 +54,18 @@ def openWebsite():
                       for rs in range(len(sta)):
                           stars.append(sta[rs].text)
 
-        repo_info = [names, urls, stars]
+                      fok = soup.find_all("span", {"id": "repo-network-counter"})
+                      for fo in range(len(fok)):
+                          forks.append(fok[fo].text)
+                      
+                      iss = soup.find("span", {"id": "issues-repo-tab-count"})
+                      
+                      if iss is not None:
+                          issues.append(iss.text)
+                      else:
+                          issues.append('0')
+
+        repo_info = [names, urls, stars,forks,issues]
         
         div = soup.find('a', {'rel': 'n'})
         
