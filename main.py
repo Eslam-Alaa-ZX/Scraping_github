@@ -1,13 +1,12 @@
 from requests.api import get
-# Python3 script to fetch top 10 starred
-# repositories of a user on github
 import urllib.request, urllib.parse, urllib.error
 from urllib.parse import urlparse
 import http.cookiejar
 import requests
 from lxml import html
 from lxml import etree
-# import bs4
+import csv
+from itertools import zip_longest
 from bs4 import BeautifulSoup
 import re
 import operator
@@ -65,6 +64,11 @@ def openWebsite():
                             issues.append('0')
 
         repo_info = [names, urls, stars, forks, issues]
+        export_file = zip_longest(*repo_info)
+        with open("C:/Users/future/PycharmProjects/Network_project/repos.csv", "w") as myfile:
+            wr = csv.writer(myfile)
+            wr.writerow(["Repositorie Name", "Repositorie URL", "Number Of Stars", "Number Of Forks", "Number Of Issues"])
+            wr.writerows(export_file)
 
         div = soup.find('a', {'rel': 'n'})
 
