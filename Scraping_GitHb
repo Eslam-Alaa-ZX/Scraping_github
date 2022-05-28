@@ -1,89 +1,90 @@
-from requests.api import get
-import urllib.request, urllib.parse, urllib.error
-from urllib.parse import urlparse
-import http.cookiejar
 import requests
-from lxml import html
-from lxml import etree
 import csv
 from itertools import zip_longest
 from bs4 import BeautifulSoup
 import re
-import operator
 
 
-
-def openWebsite():
-
-    username = str(input("enter GitHub username: "))
-    repo_info = []
-    stars = []
+def repoScraping():
+    username = str(input("Enter GitHub username: "))
+    repoInfo = []
     names = []
     urls = []
     stars = []
-    forks=[]
-    issues=[]
+    forks = []
+    issues = []
+
+    url = "https://github.com/" + username + "?tab=repositories"
 
     while True:
 
-        url = "https://github.com/" + username + "?tab=repositories"
-        web_url = requests.get(url)
-        result = web_url.content
-        soup = BeautifulSoup(result, "lxml")
+        getWeb = requests.get(url)
+        webContent = getWeb.content
+        soup = BeautifulSoup(webContent, "lxml")
         listOfRipo = soup.find_all("ul", {"data-filterable-for": "your-repos-filter"})
-        for repo in listOfRipo:
-            a_repo = repo.find_all("li", {
-                "class": "col-12 d-flex width-full py-4 border-bottom color-border-muted public source"})+repo.find_all("li", {"class": "col-12 d-flex width-full py-4 border-bottom color-border-muted public fork"})
-            
-            #temp=repo.find_all("li", {"class": "col-12 d-flex width-full py-4 border-bottom color-border-muted public fork"})
-            #a_repo.append()
-            for repoN in a_repo:
-                name = repoN.find_all("h3", {"class": "wb-break-all"})
-                for link in name:
-                  l=link.find_all("a",{"itemprop":"name codeRepository"})
-                  for r in l:
-                      names.append(r.text)
-                      url2 = str(r.get("href"))
-                      urls.append("https://github.com/" +url2)
-                      
-                      web_url = requests.get("https://github.com/" +url2)
-                      result = web_url.content
-                      soup = BeautifulSoup(result, "lxml")
-                      sta = soup.find_all("span", {"id": "repo-stars-counter-star"})
-                      for rs in range(len(sta)):
-                          stars.append(sta[rs].text)
 
-                      fok = soup.find_all("span", {"id": "repo-network-counter"})
-                      for fo in range(len(fok)):
-                          forks.append(fok[fo].text)
-                      
-                      iss = soup.find("span", {"id": "issues-repo-tab-count"})
-                      
-                      if iss is not None:
-                          issues.append(iss.text)
-                      else:
-                          issues.append('0')
+        for listItem in listOfRipo:
+            repo = listItem.find_all("li", {
+                "class": re.compile("^col-12 d-flex width-full py-4 border-bottom color-border-muted public")})
+            for repoTitel in repo:
+                repoName = repoTitel.find_all("h3", {"class": "wb-break-all"})
+                for link in repoName:
+                    repoUrl = link.find_all("a", {"itemprop": "name codeRepository"})
+                    for repoUrlInfo in repoUrl:
+                        names.append((""+repoUrlInfo.text).replace("\n        ",""))
+                        repoPageUrl = str(repoUrlInfo.get("href"))
+                        urls.append("https://github.com/" + repoPageUrl)
 
-        repo_info = [names, urls, stars,forks,issues]
-        export_file = zip_longest(*repo_info)
-        with open("repos.csv","w") as myfile:
-          wr = csv.writer(myfile)
-          wr.writerow(["Repositorie Name","Repositorie URL","Number Of Stars","Number Of Forks","Number Of Issues"])
-          wr.writerows(export_file)
-        
-        div = soup.find('a', {'rel': 'n'})
-        
-        if div is not None:
-            url = div.get('href')
-            url = "https://github.com/" + url
+                        getWeb = requests.get("https://github.com/" + repoPageUrl)
+                        webContent = getWeb.content
+                        soup = BeautifulSoup(webContent, "lxml")
+
+                        star = soup.find_all("span", {"id": "repo-stars-counter-star"})
+                        for starInfo in range(len(star)):
+                            stars.append(star[starInfo].text)
+
+                        fork = soup.find_all("span", {"id": "repo-network-counter"})
+                        for forkInfo in range(len(fork)):
+                            forks.append(fork[forkInfo].text)
+
+                        issue = soup.find("span", {"id": "issues-repo-tab-count"})
+                        if issue is not None:
+                            issues.append(issue.text)
+                        else:
+                            issues.append('0')
+
+        repoInfo = [names, urls, stars, forks, issues]
+        summaryFile = zip_longest(*repoInfo)
+        with open("repos.csv", "w") as file:
+            write = csv.writer(file)
+            write.writerow(
+                ["Repositorie Name", "Repositorie URL", "Number Of Stars", "Number Of Forks", "Number Of Issues"])
+            write.writerows(summaryFile)
+
+        getWeb = requests.get(url)
+        webContent = getWeb.content
+        soup = BeautifulSoup(webContent, "lxml")
+        nextPage = soup.find_all('div', {'class':'paginate-container'})
+        if(len(nextPage)==0):
+          break
+        nextPageCheck = nextPage[0]
+        for nextPageInfo in nextPage:
+            nextPageUrl = nextPageInfo.find_all('a', {'rel': 'nofollow'})
+            for nextPageUrlInfo in nextPageUrl:
+                if nextPageUrlInfo.text == "Next":
+                    nextPageCheck = nextPageUrlInfo
+                else:
+                    nextPageCheck = None
+
+        if nextPageCheck is not None:
+            url = nextPageCheck.get('href')
         else:
-            # if there is no next repository
-            # page, then exit loop
             break
 
-    for y in repo_info:
-      print(y);
+    for completRepoInfo in repoInfo:
+        print(completRepoInfo)
 
-# Driver program
-if __name__ == "__main__":
-    openWebsite()
+
+
+
+repoScraping()
