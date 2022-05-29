@@ -53,14 +53,6 @@ def repoScraping():
                         else:
                             issues.append('0')
 
-        repoInfo = [names, urls, stars, forks, issues]
-        summaryFile = zip_longest(*repoInfo)
-        with open("repos.csv", "w") as file:
-            write = csv.writer(file)
-            write.writerow(
-                ["Repositorie Name", "Repositorie URL", "Number Of Stars", "Number Of Forks", "Number Of Issues"])
-            write.writerows(summaryFile)
-
         getWeb = requests.get(url)
         webContent = getWeb.content
         soup = BeautifulSoup(webContent, "lxml")
@@ -80,6 +72,14 @@ def repoScraping():
             url = nextPageCheck.get('href')
         else:
             break
+
+    repoInfo = [names, urls, stars, forks, issues]
+    summaryFile = zip_longest(*repoInfo)
+    with open("repos.csv", "w") as file:
+        write = csv.writer(file)
+        write.writerow(
+            ["Repositorie Name", "Repositorie URL", "Number Of Stars", "Number Of Forks", "Number Of Issues"])
+        write.writerows(summaryFile)
 
     for completRepoInfo in repoInfo:
         print(completRepoInfo)
